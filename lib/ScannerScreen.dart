@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
+import 'InfosScreen.dart';
 import 'PDFPreviewScreen.dart';
 import 'Utils.dart';
 
 class ScannerScreen extends StatefulWidget {
+  static Color color = Colors.green;
+
   const ScannerScreen({Key? key}) : super(key: key);
 
   @override
@@ -18,20 +21,47 @@ class _ScannerScreenState extends State<ScannerScreen> {
   List<String> _pictures = [];
   List<String> _selectedPictures = [];
   bool _isScanning = false;
+  DateTime? lastPressed; // Stocke le moment du dernier appui
 
-  Color color = Colors.cyanAccent;
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false, // Empêche la fermeture automatique
+      onPopInvoked: (didPop) {
+        final now = DateTime.now();
+
+        if (lastPressed == null || now.difference(lastPressed!) > Duration(seconds: 2)) {
+          // Premier appui -> Affiche un message
+          lastPressed = now;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Appuyez à nouveau pour quitter"),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          // Deuxième appui rapide -> Quitte l'application
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Scanner de Documents'),
         centerTitle: true,
-        backgroundColor: color,
+        backgroundColor: ScannerScreen.color,
         actions: [
             IconButton(
               icon: const Icon(Icons.info_outlined),
-              onPressed: _selectedPictures.isNotEmpty ? null : null,
-              tooltip: "Exporter en PDF",
+              onPressed: (){
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => InfosScreen(),
+                  ),
+                );
+              },
+              tooltip: "Infos",
             ),
         ],
       ),
@@ -44,7 +74,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               icon: const Icon(Icons.camera),
               label: const Text("Scanner un Document"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: color,
+                backgroundColor: ScannerScreen.color,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 textStyle: const TextStyle(fontSize: 18),
@@ -151,11 +181,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
             );
           }
         },
-        backgroundColor: color,
+        backgroundColor: ScannerScreen.color,
         child: const Icon(Icons.picture_as_pdf),
         tooltip: 'Exporter',
       )
           : null,
+      ),
     );
   }
 

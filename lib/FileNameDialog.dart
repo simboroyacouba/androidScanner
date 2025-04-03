@@ -1,8 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-
 import 'Utils.dart';
+
 
 class FileNameDialog extends StatefulWidget {
   final Function(String fileName) onFileNameChosen; // Callback pour renvoyer le nom du fichier

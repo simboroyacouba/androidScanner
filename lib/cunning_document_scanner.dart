@@ -1,11 +1,8 @@
 import 'dart:async';
-
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
-
 import 'ios_options.dart';
 
-export 'ios_options.dart';
 
 class CunningDocumentScanner {
   static const MethodChannel _channel =

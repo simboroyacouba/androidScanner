@@ -8,7 +8,9 @@ import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 
 import 'FileNameDialog.dart';
+import 'ScannerScreen.dart';
 import 'Utils.dart';
+
 
 class PDFPreviewScreen extends StatefulWidget {
   final Uint8List pdfBytes;
@@ -54,7 +56,7 @@ class _PDFPreviewScreenState extends State<PDFPreviewScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                             content: Text("PDF généré avec succès dans : $directoryPath"),
-                            backgroundColor: Colors.green,  // Set background color to green
+                            backgroundColor: ScannerScreen.color,  // Set background color to green
                             duration: const Duration(seconds: 5),
                         ),
                       );
@@ -67,7 +69,6 @@ class _PDFPreviewScreenState extends State<PDFPreviewScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text("Permission refusée")),
             );
-            print("Permission d'accès au stockage refusée");
           }
         },
         backgroundColor: Colors.tealAccent,
