@@ -19,15 +19,15 @@ class _ScannerScreenState extends State<ScannerScreen> {
   List<String> _selectedPictures = [];
   bool _isScanning = false;
 
+  Color color = Colors.cyanAccent;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Scanner de Documents'),
         centerTitle: true,
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: color,
         actions: [
-          if (_pictures.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.info_outlined),
               onPressed: _selectedPictures.isNotEmpty ? null : null,
@@ -44,7 +44,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               icon: const Icon(Icons.camera),
               label: const Text("Scanner un Document"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: color,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 textStyle: const TextStyle(fontSize: 18),
@@ -67,70 +67,72 @@ class _ScannerScreenState extends State<ScannerScreen> {
               )
             else
               Expanded(
-                child: ReorderableWrap(
-                  spacing: 8.0,
-                  runSpacing: 8.0,
-                  padding: const EdgeInsets.all(8),
-                  onReorder: (int oldIndex, int newIndex) {
-                    setState(() {
-                      final item = _pictures.removeAt(oldIndex);
-                      _pictures.insert(newIndex, item);
+                child: SingleChildScrollView(
+                  child: ReorderableWrap(
+                   spacing: 8.0,
+                   runSpacing: 8.0,
+                   padding: const EdgeInsets.all(8),
+                   onReorder: (int oldIndex, int newIndex) {
+                     setState(() {
+                       final item = _pictures.removeAt(oldIndex);
+                       _pictures.insert(newIndex, item);
 
-                      // Met à jour l'ordre des éléments dans _selectedPictures
-                      _selectedPictures.sort((a, b) {
-                        // Trouve l'index de chaque élément dans _pictures et compare-les
-                        int indexA = _pictures.indexOf(a);
-                        int indexB = _pictures.indexOf(b);
-                        return indexA.compareTo(indexB);
-                      });
-                    });
-                  },
-                  children: _pictures.map((imagePath) {
-                    bool isSelected = _selectedPictures.contains(imagePath);
-                    return GestureDetector(
-                      key: ValueKey(imagePath),
-                      onTap: () {
-                        setState(() {
-                          if (isSelected) {
-                            _selectedPictures.remove(imagePath);
-                          } else {
-                            _selectedPictures.add(imagePath);
-                            _selectedPictures.sort((a, b) {
-                              int indexA = _pictures.indexOf(a);
-                              int indexB = _pictures.indexOf(b);
-                              return indexA.compareTo(indexB);
-                            });
-                          }
-                        });
-                      },
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.file(
-                              File(imagePath),
-                              fit: BoxFit.cover,
-                              width: 100,
-                              height: 100,
-                            ),
-                          ),
-                          if (isSelected)
-                            Positioned(
-                              top: 5,
-                              right: 5,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.blue,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.check, color: Colors.white, size: 16),
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                       // Met à jour l'ordre des éléments dans _selectedPictures
+                       _selectedPictures.sort((a, b) {
+                         // Trouve l'index de chaque élément dans _pictures et compare-les
+                         int indexA = _pictures.indexOf(a);
+                         int indexB = _pictures.indexOf(b);
+                         return indexA.compareTo(indexB);
+                       });
+                     });
+                   },
+                   children: _pictures.map((imagePath) {
+                     bool isSelected = _selectedPictures.contains(imagePath);
+                     return GestureDetector(
+                       key: ValueKey(imagePath),
+                       onTap: () {
+                         setState(() {
+                           if (isSelected) {
+                             _selectedPictures.remove(imagePath);
+                           } else {
+                             _selectedPictures.add(imagePath);
+                             _selectedPictures.sort((a, b) {
+                               int indexA = _pictures.indexOf(a);
+                               int indexB = _pictures.indexOf(b);
+                               return indexA.compareTo(indexB);
+                             });
+                           }
+                         });
+                       },
+                       child: Stack(
+                         children: [
+                           ClipRRect(
+                             borderRadius: BorderRadius.circular(10),
+                             child: Image.file(
+                               File(imagePath),
+                               fit: BoxFit.cover,
+                               width: 100,
+                               height: 100,
+                             ),
+                           ),
+                           if (isSelected)
+                             Positioned(
+                               top: 5,
+                               right: 5,
+                               child: Container(
+                                 padding: const EdgeInsets.all(4),
+                                 decoration: const BoxDecoration(
+                                   color: Colors.blue,
+                                   shape: BoxShape.circle,
+                                 ),
+                                 child: const Icon(Icons.check, color: Colors.white, size: 16),
+                               ),
+                             ),
+                         ],
+                       ),
+                     );
+                   }).toList(),
+                  ),
                 ),
               ),
           ],
@@ -149,7 +151,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
             );
           }
         },
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: color,
         child: const Icon(Icons.picture_as_pdf),
         tooltip: 'Exporter',
       )

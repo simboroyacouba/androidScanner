@@ -55,11 +55,17 @@ class Utils{
     final pdfFile = File(filePath);
 
     await pdfFile.writeAsBytes(pdfBytes);
-
-    // ScaffoldMessenger.of(context).showSnackBar(
-    //   const SnackBar(content: Text("PDF généré avec succès dans : $filePath")),
-    // );
-    print("PDF enregistré avec succès : $filePath");
     return pdfFile;
+  }
+
+
+  static Future<bool> checkExistingFile(String filePath) async {
+    File file = File(filePath);
+    if (await file.exists()) {
+     return true;
+    }
+    else{
+      return false;
+    }
   }
 }
