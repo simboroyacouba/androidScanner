@@ -5,6 +5,9 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 
+Directory savedDir = Directory('/storage/emulated/0/Download/scans/scanned_docs');
+Directory downloadsDirectory = Directory('/storage/emulated/0/Download/scans');
+
 class Utils{
   static Future<Uint8List> genererPDF(List<String> selectedPictures) async {
 
@@ -35,7 +38,7 @@ class Utils{
 
   static Future<File> exportToPDF(Uint8List pdfBytes,String path, String name) async {
     // Utilisation d'un répertoire accessible
-    final downloadsDirectory = Directory('/storage/emulated/0/Download/scans');
+    // final downloadsDirectory = Directory('/storage/emulated/0/Download/scans');
     String filePath;
     if (!await downloadsDirectory.exists()) {
       await downloadsDirectory.create(recursive: true);
@@ -67,4 +70,29 @@ class Utils{
       return false;
     }
   }
+
+  static Future<void> savePicturesLocally(List<String> pictures) async {
+
+    // final Directory savedDir = Directory('/storage/emulated/0/Download/scans/scanned_docs');
+
+    if (!await savedDir.exists()) {
+      await savedDir.create(recursive: true);
+    }
+
+    for (String path in pictures) {
+      final File originalFile = File(path);
+      final String fileName = path.split('/').last;
+      final File newFile = File('${savedDir.path}/$fileName');
+      await originalFile.copy(newFile.path);
+    }
+  }
+
+  static Future<String> getUrlShare() async {
+    String url = "https://play.google.com/store/apps/details?id=com.cti.scanner";
+
+    return url;
+  }
+
+
+
 }

@@ -6,6 +6,7 @@ import 'package:reorderables/reorderables.dart';
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'InfosScreen.dart';
 import 'PDFPreviewScreen.dart';
+import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'Utils.dart';
 
 class ScannerScreen extends StatefulWidget {
@@ -21,9 +22,17 @@ class _ScannerScreenState extends State<ScannerScreen> {
   List<String> _pictures = [];
   List<String> _selectedPictures = [];
   bool _isScanning = false;
+  bool _isInAsyncCall = false;
+  double bur = 0;
   DateTime? lastPressed; // Stocke le moment du dernier appui
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      await loadSavedPictures();
+    });
+  }
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false, // Empêche la fermeture automatique
@@ -65,8 +74,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
             ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: ModalProgressHUD(
+        inAsyncCall: _isInAsyncCall,
+        // demo of some additional parameters
+        opacity: 0.5,
+        blur: bur,
+        progressIndicator: const CircularProgressIndicator(),
         child: Column(
           children: [
             ElevatedButton.icon(
@@ -83,6 +96,36 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 ),
               ),
             ),
+            _selectedPictures.isNotEmpty
+                ? Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ElevatedButton(
+                    onPressed: () async {
+                      if (_selectedPictures.isNotEmpty) {
+                        Uint8List pdfBytes = await Utils.genererPDF(_selectedPictures);
+                        setState(() {
+                          _isInAsyncCall = true;
+                        });
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PDFPreviewScreen(pdfBytes: pdfBytes),
+                          ),
+                        );
+                        setState(() {
+                          _isInAsyncCall = false;
+                        });
+                      }
+                    },
+                    child: const Icon(Icons.picture_as_pdf)
+                ),
+                ElevatedButton(
+                    onPressed:  confirmDeletion,
+                    child: const Icon(Icons.delete)
+                ),
+              ],
+            ): Row(),
             const SizedBox(height: 20),
             if (_isScanning)
               const CircularProgressIndicator()
@@ -99,8 +142,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   child: ReorderableWrap(
-                   spacing: 8.0,
-                   runSpacing: 8.0,
+                   spacing: 10.0,
+                   runSpacing: 10.0,
                    padding: const EdgeInsets.all(8),
                    onReorder: (int oldIndex, int newIndex) {
                      setState(() {
@@ -168,24 +211,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ],
         ),
       ),
-      floatingActionButton: _selectedPictures.isNotEmpty
-          ? FloatingActionButton(
-        onPressed: () async {
-          if (_selectedPictures.isNotEmpty) {
-            Uint8List pdfBytes = await Utils.genererPDF(_selectedPictures);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PDFPreviewScreen(pdfBytes: pdfBytes),
-              ),
-            );
-          }
-        },
-        backgroundColor: ScannerScreen.color,
-        child: const Icon(Icons.picture_as_pdf),
-        tooltip: 'Exporter',
-      )
-          : null,
       ),
     );
   }
@@ -205,35 +230,110 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Future<void> onPressed() async {
     await requestCameraPermission();
 
-    setState(() {
-      _isScanning = true;
-    });
+    if (await Permission.manageExternalStorage.isDenied) {
+      // Demander l'autorisation
+      await Permission.manageExternalStorage.request();
+    }
+    if (await Permission.manageExternalStorage.isGranted) {
+      setState(() {
+        _isScanning = true;
+      });
 
-    try {
-      List<String>? pictures = await CunningDocumentScanner.getPictures();
-      if (pictures == null || pictures.isEmpty) {
+      try {
+        List<String>? pictures = await CunningDocumentScanner.getPictures();
+        if (pictures == null || pictures.isEmpty) {
+          setState(() {
+            _isScanning = false;
+          });
+          return;
+        }
+
+        if (!mounted) return;
+        await Utils.savePicturesLocally(pictures);
+        setState(() {
+          _pictures.addAll(pictures);
+        });
+      } catch (exception) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Erreur lors du scan : $exception"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } finally {
+        if (!mounted) return;
         setState(() {
           _isScanning = false;
         });
-        return;
       }
-
-      if (!mounted) return;
-      setState(() {
-        _pictures.addAll(pictures);
-      });
-    } catch (exception) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Erreur lors du scan : $exception"),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isScanning = false;
-      });
     }
   }
+
+
+  Future<void> loadSavedPictures() async {
+
+    if (await Permission.manageExternalStorage.isDenied) {
+      // Demander l'autorisation
+      await Permission.manageExternalStorage.request();
+    }
+    if (await Permission.manageExternalStorage.isGranted) {
+      Directory savedDir = Directory(
+          '/storage/emulated/0/Download/scans/scanned_docs');
+
+      if (await savedDir.exists()) {
+        final List<FileSystemEntity> files = savedDir.listSync();
+        final List<String> paths = files
+            .where((entity) => entity is File)
+            .map((file) => file.path)
+            .toList();
+
+        setState(() {
+          _pictures = paths;
+        });
+      }
+    }
+  }
+
+  Future<void> deleteSelectedPicturesFromStorage() async {
+    for (String path in _selectedPictures) {
+      final file = File(path);
+
+      // Vérifie que le fichier existe avant de le supprimer
+      if (await file.exists()) {
+        await file.delete();
+      }
+
+      // Retire aussi le chemin de la liste principale des images
+      _pictures.remove(path);
+    }
+
+    setState(() {
+      _selectedPictures.clear(); // Vide la sélection après suppression
+    });
+  }
+
+  void confirmDeletion() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Confirmation"),
+        content: Text("Voulez-vous vraiment supprimer ces images ?"),
+        actions: [
+          TextButton(
+            child: Text("Annuler"),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          ElevatedButton(
+            child: Text("Supprimer"),
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await deleteSelectedPicturesFromStorage();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+
 }

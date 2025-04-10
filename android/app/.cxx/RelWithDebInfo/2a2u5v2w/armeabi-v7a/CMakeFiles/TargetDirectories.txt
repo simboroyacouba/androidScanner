@@ -1,0 +1,2 @@
+C:/Users/NEBRATA/StudioProjects/scanner/android/app/.cxx/RelWithDebInfo/2a2u5v2w/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/NEBRATA/StudioProjects/scanner/android/app/.cxx/RelWithDebInfo/2a2u5v2w/armeabi-v7a/CMakeFiles/rebuild_cache.dir
